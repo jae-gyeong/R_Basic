@@ -1,0 +1,176 @@
+<html>
+
+<head>
+<title>Title</title>
+</head>
+
+<body>
+
+<!--begin.rcode
+# 1. 데이터 불러오기
+setwd("C:/Python/RBasic-master/RBasic-master/R_Data")
+getwd()
+
+tr <- read.csv("titanic_train.csv", stringsAsFactors=F, na.strings=c("NA", ""))
+test <- read.csv("titanic_test.csv", stringsAsFactors=F, na.strings=c("NA", ""))
+dim(tr); dim(test)
+
+end.rcode-->
+
+<!--begin.rcode
+# 데이터 탐색
+names(tr)
+names(test)
+names(sub)
+str(tr)
+test$Survived <- NA
+all <- rbind(tr, test)
+## 결측치 확인
+sapply(all, function(x) {sum(is.na(x)) } )
+
+
+
+<!--begin.rcode
+end.rcode-->
+
+
+<!--begin.rcode
+# 결측치 처리
+install.packages("Amelia")
+library(Amelia)
+
+
+tr[is.na(tr$Embarked), 'Embarked'] <- 'S'
+table(tr$Embarked, useNA="always") 
+
+tr_backup <- tr
+#test_backup <- test
+
+tr$Name = as.character(tr$Name)
+head(tr$Name)
+head( strsplit(tr$Name,"\\s+") ) # 이름으로 나누기
+
+tmp = strsplit(tr$Name,"\\s+") # tmp 임시 저장 후, 단어 뽑기
+tr_words = table( unlist(tmp))
+tr_words
+
+head( names(tr_words) )
+
+
+loc = grep('\\.', names(tr_words) ) # . 이 있는 위치 찾기
+loc
+tr_words[loc]
+sort(tr_words[loc], decreasing=TRUE)
+
+head( tr$Age )
+tr [ grepl(" Mr\\.",tr$Name) & !is.na(tr$Age), ]
+mean_mr = mean ( tr [ grepl(" Mr\\.",tr$Name) & !is.na(tr$Age), 'Age' ] ) # 남성 평균 나이
+mean_mrs = mean ( tr [ grepl(" Mrs\\.",tr$Name) & !is.na(tr$Age), 'Age' ] ) # Mrs 평균 나이
+mean_dr = mean ( tr [ grepl(" Dr\\.",tr$Name) & !is.na(tr$Age), 'Age' ] ) # Dr 평균 나이
+mean_miss = mean ( tr [ grepl(" Miss\\.",tr$Name) & !is.na(tr$Age), 'Age' ] ) # Miss 평균 나이
+mean_master = mean ( tr [ grepl(" Master\\.",tr$Name) & !is.na(tr$Age), 'Age' ] ) # Master 평균 나이
+mean_mr; mean_mrs; mean_dr; mean_miss; mean_master
+
+
+end.rcode-->
+
+
+<!--begin.rcode
+# 성별, 결혼 유무별 기타 구분별 나이 평균
+tr [ grepl(" Mr\\.",tr$Name) & is.na(tr$Age), 'Age' ] = as.integer(mean_mr)
+tr [ grepl(" Mrs\\.",tr$Name) & is.na(tr$Age), 'Age' ] = as.integer(mean_mrs)
+tr [ grepl(" Dr\\.",tr$Name) & is.na(tr$Age), 'Age' ] = as.integer(mean_dr)
+tr [ grepl(" Miss\\.",tr$Name) & is.na(tr$Age), 'Age' ] = as.integer(mean_miss)
+tr [ grepl(" Master\\.",tr$Name) & is.na(tr$Age), 'Age' ] = as.integer(mean_master)
+
+tr [ grepl(" Mr\\.",tr$Name) & is.na(tr$Age), ]
+
+tr [ is.na(tr$Age), ]
+
+missmap(tr, main="Missing Map")
+
+saveRDS(tr, "train_preOK_0901.RDS")
+write.csv(tr, file="train_preOK_0901.csv", row.names=F)
+
+par(mfrow=c(1,2))
+plot(test$Age)
+hist(test$Age)
+missmap(test, main="Missing Map")
+
+table(test$Age, useNA="always")
+
+mean_mr = mean ( test [ grepl(" Mr\\.",test$Name) & !is.na(test$Age), 'Age' ] ) # 남성 평균 나이
+mean_mrs = mean ( test [ grepl(" Mrs\\.",test$Name) & !is.na(test$Age), 'Age' ] ) # 남성 평균 나이
+mean_dr = mean ( test [ grepl(" Dr\\.",test$Name) & !is.na(test$Age), 'Age' ] ) # 의사 평균 나이
+
+mean_miss = mean ( test [ grepl(" Miss\\.",test$Name) & !is.na(test$Age), 'Age' ] ) # 여성 평균 나이
+mean_master = mean ( test [ grepl(" Master\\.",test$Name) & !is.na(test$Age), 'Age' ] ) # 박사급? 평균 나이
+mean_mr; mean_mrs; mean_dr; mean_miss; mean_master
+
+test [grepl(" Mr\\.",test$Name) & is.na(test$Age), 'Age' ] = as.integer(mean_mr)
+
+test [grepl(" Mrs\\.",test$Name) & is.na(test$Age), 'Age' ] = as.integer(mean_mrs)
+test [grepl(" Dr\\.",test$Name) & is.na(test$Age), 'Age' ] = as.integer(mean_dr)
+test [grepl(" Miss\\.",test$Name) & is.na(test$Age), 'Age' ] = as.integer(mean_miss)
+test [grepl(" Master\\.",test$Name) & is.na(test$Age), 'Age' ] = as.integer(mean_master)
+
+test[is.na(test$Age) , ]
+
+mean_all = mean ( test [!is.na(test$Age), 'Age' ] )
+test[is.na(test$Age) , 'Age' ] = as.integer(mean_all)
+
+mean_Fare <- mean(test$Fare, na.rm=T)
+mean_Fare
+
+test[is.na(test$Fare), 'Fare'] <- as.integer(mean_Fare)
+table(tr$Fare, useNA="always")
+
+missmap(test, main="Missing Map")
+test[is.na(test$Age) , ]
+end.rcode-->
+
+
+<!--begin.rcode
+# 자료형 변환
+tr$PassengerId <- as.factor(tr$PassengerId)
+tr$Pclass <- as.factor(tr$Pclass)
+tr$Sex <- as.factor(tr$Sex)
+tr$Embarked <- as.factor(tr$Embarked)
+
+test$PassengerId <- as.factor(test$PassengerId)
+test$Pclass <- as.factor(test$Pclass)
+test$Sex <- as.factor(test$Sex)
+test$Embarked <- as.factor(test$Embarked)
+str(tr); str(test)
+
+install.packages("randomForest")
+
+library(randomForest)
+
+rf_model <- randomForest(factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch +
+ Fare + Embarked, data=tr)
+rf_model
+
+
+
+end.rcode-->
+
+<!--begin.rcode
+# Prediction
+# Predict using the test set
+prediction <- predict(rf_model, test)
+#prediction
+solution <- data.frame(PassengerID = test$PassengerId, Survived = prediction)
+dim(solution)
+
+# Write the solution to file
+write.csv(solution, file = 'rf_mod_Solution_base2.csv', row.names = F)
+
+end.rcode-->
+
+
+<!--begin.rcode
+end.rcode-->
+
+</body>
+</html>
